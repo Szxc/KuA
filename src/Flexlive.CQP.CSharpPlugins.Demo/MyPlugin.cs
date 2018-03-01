@@ -4,8 +4,10 @@ using Flexlive.CQP.Framework;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
 
 namespace Flexlive.CQP.CSharpPlugins.Demo
 {
@@ -22,10 +24,10 @@ namespace Flexlive.CQP.CSharpPlugins.Demo
             // 此方法用来初始化插件名称、版本、作者、描述等信息，
             // 不要在此添加其它初始化代码，插件初始化请写在Startup方法中。
 
-            this.Name = "Flexlive官方示例插件";
+            this.Name = "个人日志插件";
             this.Version = new Version("1.0.0.0");
-            this.Author = "Flexlive";
-            this.Description = "基于Flexlive版 酷Q C#开方框架的酷Q插件示例。";
+            this.Author = "zxc";
+            this.Description = "用于录入和展示个人日志";
         }
 
         /// <summary>
@@ -57,13 +59,15 @@ namespace Flexlive.CQP.CSharpPlugins.Demo
         /// <param name="font">字体。</param>
         public override void PrivateMessage(int subType, int sendTime, long fromQQ, string msg, int font)
         {
-            // 处理私聊消息。
-            //CQ.SendPrivateMessage(fromQQ, String.Format("[{0}]你发的私聊消息是TTTTTTT：{1}", CQ.ProxyType, msg));
             string rtMsg = "暂无信息";
-            string[] msgArry = msg.Split(' ');
-            if (msgArry[0] == "存" && msgArry.Length == 2)
+            try
             {
-                try
+
+                MongoDbHelper mh = new MongoDbHelper();
+                // 处理私聊消息。
+                //CQ.SendPrivateMessage(fromQQ, String.Format("[{0}]你发的私聊消息是TTTTTTT：{1}", CQ.ProxyType, msg));
+                string[] msgArry = msg.Split(' ');
+                if (msgArry[0] == "存" && msgArry.Length == 2)
                 {
                     Essay ey = new Essay
                     {
@@ -71,28 +75,33 @@ namespace Flexlive.CQP.CSharpPlugins.Demo
                         Status = 1,
                         Content = msgArry[1]
                     };
-                    MongoDbHelper mh = new MongoDbHelper();
                     if (mh.Insert<Essay>(ey))
                     {
                         rtMsg = "保存成功";
                     }
                 }
-                catch (Exception ex)
+                else if (msgArry[0] == "展示")
                 {
-                    rtMsg = "保存失败："+ex.Message;
-                }                
+                    List<Essay> ey = mh.FindAll<Essay>();
+                    foreach (var item in ey)
+                    {
+                        CQ.SendPrivateMessage(fromQQ, item.Content);
+                        Thread.Sleep(2000);
+                    }
+                    rtMsg = "展示结束";
+                }
+                else
+                {
+                    WebRequest wq = WebRequest.Create("http://www.tuling123.com/openapi/api?key=24defe87976c4fb19141d1142dc3c913&info=" + msg);
+                    WebResponse wp = wq.GetResponse();
+                    string json = new StreamReader(wp.GetResponseStream()).ReadToEnd();
+                    JObject jp = (JObject)JsonConvert.DeserializeObject(json);//result为上面的Json数据 
+                    rtMsg = jp["text"].ToString();
+                }
             }
-            else if (msgArry[0] == "随机")
+            catch (Exception ex)
             {
-                
-            }
-            else
-            {
-                WebRequest wq = WebRequest.Create("http://www.tuling123.com/openapi/api?key=24defe87976c4fb19141d1142dc3c913&info=" + msg);
-                WebResponse wp = wq.GetResponse();
-                string json = new StreamReader(wp.GetResponseStream()).ReadToEnd();
-                JObject jp = (JObject)JsonConvert.DeserializeObject(json);//result为上面的Json数据 
-                rtMsg = jp["text"].ToString();
+                rtMsg = "错误信息：" + ex.Message;
             }
             CQ.SendPrivateMessage(fromQQ, rtMsg);
         }
