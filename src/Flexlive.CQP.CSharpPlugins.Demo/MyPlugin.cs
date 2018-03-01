@@ -67,7 +67,7 @@ namespace Flexlive.CQP.CSharpPlugins.Demo
                 {
                     Essay ey = new Essay
                     {
-                        IntDT = DateTime.Now,
+                        IntDT = new DateTime(),
                         Status = 1,
                         Content = msgArry[1]
                     };
