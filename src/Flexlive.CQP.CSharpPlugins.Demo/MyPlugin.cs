@@ -80,15 +80,11 @@ namespace Flexlive.CQP.CSharpPlugins.Demo
                         rtMsg = "保存成功";
                     }
                 }
-                else if (msgArry[0] == "展示")
+                else if (msgArry[0] == "随机")
                 {
                     List<Essay> ey = mh.FindAll<Essay>();
-                    foreach (var item in ey)
-                    {
-                        CQ.SendPrivateMessage(fromQQ, item.Content);
-                        Thread.Sleep(2000);
-                    }
-                    rtMsg = "展示结束";
+                    Random rd = new Random();
+                    rtMsg = ey[rd.Next(ey.Count)].Content;
                 }
                 else
                 {
